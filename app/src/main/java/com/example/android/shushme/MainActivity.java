@@ -66,9 +66,9 @@ public class MainActivity extends AppCompatActivity implements
     // Member variables
     private PlaceListAdapter mAdapter;
     private RecyclerView mRecyclerView;
+    private boolean mIsEnabled;
     private GoogleApiClient mClient;
     private Geofencing mGeofencing;
-    private boolean mIsEnabled;
 
     /**
      * Called when the activity is starting
@@ -86,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements
         mAdapter = new PlaceListAdapter(this, null);
         mRecyclerView.setAdapter(mAdapter);
 
+        // Initialize the switch state and Handle enable/disable switch change
         Switch onOffSwitch = (Switch) findViewById(R.id.enable_switch);
         mIsEnabled = getPreferences(MODE_PRIVATE).getBoolean(getString(R.string.setting_enabled), false);
         onOffSwitch.setChecked(mIsEnabled);
@@ -96,12 +97,10 @@ public class MainActivity extends AppCompatActivity implements
                 editor.putBoolean(getString(R.string.setting_enabled), isChecked);
                 mIsEnabled = isChecked;
                 editor.commit();
-                if(isChecked) {
-                    mGeofencing.registerAllGeofences();
-                } else {
-                    mGeofencing.unregisterAllGeofences();
-                }
+                if (isChecked) mGeofencing.registerAllGeofences();
+                else mGeofencing.unRegisterAllGeofences();
             }
+
         });
 
         // Build up the LocationServices API client
@@ -116,6 +115,7 @@ public class MainActivity extends AppCompatActivity implements
                 .build();
 
         mGeofencing = new Geofencing(this, mClient);
+
     }
 
     /***
@@ -169,10 +169,8 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onResult(@NonNull PlaceBuffer places) {
                 mAdapter.swapPlaces(places);
-                if(mIsEnabled) {
-                    mGeofencing.updateGeofencesList(places);
-                    mGeofencing.registerAllGeofences();
-                }
+                mGeofencing.updateGeofencesList(places);
+                if (mIsEnabled) mGeofencing.registerAllGeofences();
             }
         });
     }
