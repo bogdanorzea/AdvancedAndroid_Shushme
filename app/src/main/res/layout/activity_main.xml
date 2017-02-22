@@ -103,16 +103,16 @@
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/ic_notifications_active_primary_24dp"
                 android:paddingBottom="4dp"
                 android:paddingRight="8dp"
-                android:paddingTop="4dp" />
+                android:paddingTop="4dp"
+                android:src="@drawable/ic_notifications_active_primary_24dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Silence"
                 android:layout_gravity="center"
+                android:text="@string/ringer_permissions"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:textColor="@android:color/black" />
 
@@ -121,15 +121,16 @@
                 android:layout_height="match_parent">
 
                 <CheckBox
-                    android:id="@+id/ringer"
-                    android:layout_alignParentRight="true"
-                    android:layout_marginRight="8dp"
+                    android:id="@+id/ringer_permissions_checkbox"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_marginRight="8dp"
                     android:onClick="onRingerPermissionsClicked" />
 
             </RelativeLayout>
         </LinearLayout>
+
 
         <Button
             android:layout_width="match_parent"
