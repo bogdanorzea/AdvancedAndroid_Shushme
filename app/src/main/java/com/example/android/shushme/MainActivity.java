@@ -20,6 +20,7 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements
     // Member variables
     private PlaceListAdapter mAdapter;
     private RecyclerView mRecyclerView;
-    private GoogleApiClient mGoogleApiClient;
+    private GoogleApiClient mClient;
 
     /**
      * Called when the activity is starting
@@ -84,38 +85,14 @@ public class MainActivity extends AppCompatActivity implements
         // Build up the LocationServices API client
         // Uses the addApi method to request the LocationServices API
         // Also uses enableAutoManage to automatically when to connect/suspend the client
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
+        mClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .addApi(Places.GEO_DATA_API)
                 .enableAutoManage(this, this)
                 .build();
-    }
 
-    public void refreshPlacesData(){
-        Cursor data = getContentResolver().query(PlaceContract.PlaceEntry.CONTENT_URI,
-                null,
-                null,
-                null,
-                null);
-
-        if (data == null || data.getCount() == 0) return;
-        List<String> ids = new ArrayList<>();
-
-        int index = data.getColumnIndex(PlaceContract.PlaceEntry.COLUMN_PLACE_ID);
-        while (data.moveToNext()) {
-            ids.add(data.getString(index));
-        }
-
-        PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, ids.toArray(new String[ids.size()]));
-
-        placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
-            @Override
-            public void onResult(PlaceBuffer places) {
-                mAdapter.swapPlaces(places);
-            }
-        });
     }
 
     /***
@@ -125,8 +102,8 @@ public class MainActivity extends AppCompatActivity implements
      */
     @Override
     public void onConnected(@Nullable Bundle connectionHint) {
-        Log.i(TAG, "API Client Connection Successful!");
         refreshPlacesData();
+        Log.i(TAG, "API Client Connection Successful!");
     }
 
     /***
@@ -147,6 +124,31 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult result) {
         Log.e(TAG, "API Client Connection Failed!");
+    }
+
+    public void refreshPlacesData() {
+        Uri uri = PlaceContract.PlaceEntry.CONTENT_URI;
+        Cursor data = getContentResolver().query(
+                uri,
+                null,
+                null,
+                null,
+                null);
+
+        if (data == null || data.getCount() == 0) return;
+        List<String> guids = new ArrayList<String>();
+        while (data.moveToNext()) {
+            guids.add(data.getString(data.getColumnIndex(PlaceContract.PlaceEntry.COLUMN_PLACE_ID)));
+        }
+        PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mClient,
+                guids.toArray(new String[guids.size()]));
+        placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+            @Override
+            public void onResult(@NonNull PlaceBuffer places) {
+                mAdapter.swapPlaces(places);
+
+            }
+        });
     }
 
     /***
@@ -173,7 +175,6 @@ public class MainActivity extends AppCompatActivity implements
         } catch (Exception e) {
             Log.e(TAG, String.format("PlacePicker Exception: %s", e.getMessage()));
         }
-
     }
 
 
@@ -202,6 +203,7 @@ public class MainActivity extends AppCompatActivity implements
             contentValues.put(PlaceContract.PlaceEntry.COLUMN_PLACE_ID, placeID);
             getContentResolver().insert(PlaceContract.PlaceEntry.CONTENT_URI, contentValues);
 
+            // Get live data information
             refreshPlacesData();
         }
     }

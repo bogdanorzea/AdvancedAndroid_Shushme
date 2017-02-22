@@ -23,7 +23,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceBuffer;
 
 public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.PlaceViewHolder> {
@@ -64,9 +63,18 @@ public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.Plac
      */
     @Override
     public void onBindViewHolder(PlaceViewHolder holder, int position) {
-        Place currentPlace = mPlaces.get(position);
-        holder.addressTextView.setText(currentPlace.getAddress());
-        holder.nameTextView.setText(currentPlace.getName());
+        String placeName = mPlaces.get(position).getName().toString();
+        String placeAddress = mPlaces.get(position).getAddress().toString();
+        holder.nameTextView.setText(placeName);
+        holder.addressTextView.setText(placeAddress);
+    }
+
+    public void swapPlaces(PlaceBuffer newPlaces){
+        mPlaces = newPlaces;
+        if (mPlaces != null) {
+            // Force the RecyclerView to refresh
+            this.notifyDataSetChanged();
+        }
     }
 
     /**
@@ -76,15 +84,8 @@ public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.Plac
      */
     @Override
     public int getItemCount() {
-        if (mPlaces == null) return 0;
+        if(mPlaces==null) return 0;
         return mPlaces.getCount();
-    }
-
-    public void swapPlaces(PlaceBuffer places) {
-        mPlaces = places;
-        if (mPlaces != null) {
-            this.notifyDataSetChanged();
-        }
     }
 
     /**
