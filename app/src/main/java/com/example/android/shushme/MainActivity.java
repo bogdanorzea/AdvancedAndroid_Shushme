@@ -16,15 +16,32 @@ package com.example.android.shushme;
 * limitations under the License.
 */
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Places;
+
+public class MainActivity extends AppCompatActivity implements
+        GoogleApiClient.OnConnectionFailedListener,
+        GoogleApiClient.ConnectionCallbacks {
 
     // Constants
     public static final String TAG = MainActivity.class.getSimpleName();
+    public static final int PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
     // Member variables
     private PlaceListAdapter mAdapter;
@@ -46,12 +63,58 @@ public class MainActivity extends AppCompatActivity {
         mAdapter = new PlaceListAdapter(this);
         mRecyclerView.setAdapter(mAdapter);
 
-        // TODO (4) Create a GoogleApiClient with the LocationServices API and GEO_DATA_API
+        GoogleApiClient googleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .addApi(Places.GEO_DATA_API)
+                .enableAutoManage(this, this)
+                .build();
     }
 
-    // TODO (5) Override onConnected, onConnectionSuspended and onConnectionFailed for GoogleApiClient
-    // TODO (7) Override onResume and inside it initialize the location permissions checkbox
-    // TODO (8) Implement onLocationPermissionClicked to handle the CheckBox click event
-    // TODO (9) Implement the Add Place Button click event to show  a toast message with the permission status
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        Log.i(TAG, "API Client Connection Successful!");
+    }
 
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i(TAG, "API Client Connection Suspended!");
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.e(TAG, "API Client Connection Failed!");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        CheckBox cb = (CheckBox) findViewById(R.id.location_permissions_cb);
+        if (isLocationPermissionEnabled()) {
+            cb.setChecked(true);
+            cb.setEnabled(false);
+        } else {
+            cb.setChecked(false);
+            cb.setEnabled(true);
+        }
+    }
+
+    private boolean isLocationPermissionEnabled() {
+        int locPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
+        return (locPermission == PackageManager.PERMISSION_GRANTED);
+    }
+
+    public void onLocationPermissionClicked(View view) {
+        ActivityCompat.requestPermissions(MainActivity.this,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                PERMISSIONS_REQUEST_FINE_LOCATION);
+    }
+
+    public void addNewLocation(View view) {
+        boolean permissionStatus = isLocationPermissionEnabled();
+
+        Toast.makeText(this, "Access to permission is: " + permissionStatus, Toast.LENGTH_SHORT).show();
+    }
 }
