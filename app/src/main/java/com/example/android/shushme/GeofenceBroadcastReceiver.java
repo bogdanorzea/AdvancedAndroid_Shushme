@@ -16,10 +16,18 @@ package com.example.android.shushme;
 * limitations under the License.
 */
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
+import android.media.AudioManager;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingEvent;
 
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
@@ -36,13 +44,63 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.i(TAG, "onReceive called");
-        // TODO (4) Use GeofencingEvent.fromIntent to retrieve the GeofencingEvent that caused the transition
 
-        // TODO (5) Call getGeofenceTransition to get the transition type and use AudioManager to set the
-        // phone ringer mode based on the transition type. Feel free to create a helper method (setRingerMode)
+        GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
 
-        // TODO (6) Show a notification to alert the user that the ringer mode has changed.
-        // Feel free to create a helper method (sendNotification)
+        int transition = geofencingEvent.getGeofenceTransition();
+        if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+            setRingerMode(context, AudioManager.RINGER_MODE_SILENT);
+        } else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+            setRingerMode(context, AudioManager.RINGER_MODE_NORMAL);
+        } else {
+            Log.e(TAG, "Unknown transition: " + transition);
+            return;
+        }
 
+        sendNotification(context, transition);
+    }
+
+    private void sendNotification(Context context, int transitionType){
+        Intent intent = new Intent(context, MainActivity.class);
+
+        PendingIntent resultPendingIntent =
+                PendingIntent.getActivity(
+                        context,
+                        0,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+
+        if (transitionType == Geofence.GEOFENCE_TRANSITION_ENTER) {
+            builder.setSmallIcon(R.drawable.ic_volume_off_white_24dp)
+                    .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
+                            R.drawable.ic_volume_off_white_24dp))
+                    .setContentTitle("Normal");
+        } else if (transitionType == Geofence.GEOFENCE_TRANSITION_EXIT) {
+            builder.setSmallIcon(R.drawable.ic_volume_up_white_24dp)
+                    .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
+                            R.drawable.ic_volume_up_white_24dp))
+                    .setContentTitle("Silent");
+        }
+
+        builder.setContentIntent(resultPendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManager mNotificationManager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        mNotificationManager.notify(0, builder.build());
+    }
+
+    private void setRingerMode(Context context, int mode){
+        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (android.os.Build.VERSION.SDK_INT < 24 ||
+                (android.os.Build.VERSION.SDK_INT >= 24 && !nm.isNotificationPolicyAccessGranted())) {
+            AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            audioManager.setRingerMode(mode);
+        }
     }
 }
